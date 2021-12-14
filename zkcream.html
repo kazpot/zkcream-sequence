@@ -19,6 +19,7 @@
     co ->> api : deploy
     api ->> cream : deploy cream
     cream ->> maci: deploy maci
+    maci ->> maci: event MaciDeployed(maci address)
     maci -->> cream: ok
     cream ->> cream: link cream and maci
     cream ->> cream: set coordinator to cream contract owner
