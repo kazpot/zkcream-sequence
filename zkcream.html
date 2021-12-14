@@ -8,15 +8,15 @@
   <div class="mermaid">
   sequenceDiagram
     participant ow as Owner
-	  participant co as Coordinator
-	  participant voter as Voter
+    participant co as Coordinator
+    participant voter as Voter
     participant api as API Server
     participant cream as Cream Contract
     participant maci as MACI
     participant vtoken as Voting Token
     participant stoken as Signup Token
     co ->> co: generate coordinator public key
-	  co ->> api : deploy
+    co ->> api : deploy
     api ->> cream : deploy cream
     cream ->> maci: deploy maci
     maci -->> cream: ok
@@ -26,7 +26,7 @@
     cream -->> api: tx receipt
     api -->> co: ok
     co ->> co: generate coordinator private key
-	  ow ->> vtoken : give voting token
+    ow ->> vtoken : give voting token
     vtoken -->> ow: tx receipt
     vtoken ->> voter: transfer voting token
     voter ->> voter: approve token
