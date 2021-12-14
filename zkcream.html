@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="mermaid.min.css">
+</head>
+<body>
+  <div class="mermaid">
+  sequenceDiagram
+    participant ow as Owner
+	  participant co as Coordinator
+	  participant voter as Voter
+    participant api as API Server
+    participant cream as Cream Contract
+    participant maci as MACI
+    participant vtoken as Voting Token
+    participant stoken as Signup Token
+    co ->> co: generate coordinator public key
+	  co ->> api : deploy
+    api ->> cream : deploy cream
+    cream ->> maci: deploy maci
+    maci -->> cream: ok
+    cream ->> cream: link cream and maci
+    cream ->> cream: set coordinator to cream contract owner
+    cream ->> cream: event CreamCreated(creamAddress, ipfs hash)
+    cream -->> api: tx receipt
+    api -->> co: ok
+    co ->> co: generate coordinator private key
+	  ow ->> vtoken : give voting token
+    vtoken -->> ow: tx receipt
+    vtoken ->> voter: transfer voting token
+    voter ->> voter: approve token
+    voter ->> cream: deposit
+    cream ->> cream: insert commitment to merkle tree
+    cream ->> cream: event Deposit(commitment, tree leaf index, timestamp)
+    cream -->> voter: tx receipt
+    voter ->> voter: generate merkle tree locally to get root & [path elements, path index]
+    voter ->> api: zkcream/genproof with input data (root, nullifierHash, nullifier, secret, path elements, path index)
+    api -->> voter: receive proof
+    voter ->> voter: generate voter keypair
+    voter ->> voter: store voter private key in local storage
+    voter ->> cream: signup maci with voter public key & proof
+    cream ->> cream: verify proof
+    cream ->> maci: signup maci
+    maci ->> maci: register with signup token (only once)
+    maci ->> maci: insert state leaf into state tree and store root into state variable
+    maci ->> maci: event SignUp(voter public key, number of signups, voice credit balance)
+    maci -->> cream: ok
+    cream ->> stoken: give signup token
+    stoken ->> voter: transfer signup token
+    cream -->> voter: tx receipt
+    voter ->> voter: create message which includes vote, nonce, voter signature, ecdh shared key
+    voter ->> maci: publish message with ehemeral public key
+    maci ->> maci: insert message into message tree
+    maci ->> maci: event PublishMessage(message, ehemeral public key)
+    maci -->> voter: tx receipt
+    co ->> co : generate maci state locally (build an off-chain representation of the MACI contract)
+    co ->> api: maci/genproof witn input data (message batch index, message batch size, random state leaf)
+    api -->> co: receive proof
+    co ->> maci: batchProcessMessage with proof (process message: 有効票の処理)
+    maci ->> maci: verify proof & store new state root in state variable
+    maci -->> co: tx receipt
+    co ->> co : generate maci state locally
+    co ->> maci: genQvtPublicSignals for getting input data necessary for tally snark
+    maci -->> co: tx receipts
+    co ->> api: maci/gen_qvtproof with input data
+    api -->> co: receive tally proof
+    co ->> maci: proveVoteTallyBatch with tally proof (publish tally: 集計)
+    maci ->> maci: verify tally proof & store total number of votes into state variable
+    maci -->> co: tx receipts
+    co ->> co: create tally file
+    co ->> api: ipfs/ with tally file
+    api -->> co: ok
+    co ->> cream: publishTallyHash
+    cream ->> cream: store tally hash into state variable
+    cream ->> cream: event TallyPublished(timestamp)
+    cream -->> co: tx receipts
+    ow ->> cream: approveTally
+    cream ->> cream: set state varialbe approved to true
+    cream ->> cream: event TallyApproved(timestamp)
+    cream -->> ow: tx receipts
+    co ->> cream: withdraw to deliver tokens to candidates only for the winning votes (投票結果の公開)
+    cream ->> cream: event Withdrawal(candidate address)
+    cream -->> co: tx receipts
+    co ->> co: display the voting result
+  </div>
+  <script src="./node_modules/mermaid/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true});</script>
+</body>
+</html>
